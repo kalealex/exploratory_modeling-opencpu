@@ -1,1 +1,1 @@
-CKM OpenCPU R api
+Exploratory modeling OpenCPU R api
