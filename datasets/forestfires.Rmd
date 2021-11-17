@@ -85,6 +85,7 @@ What about day of the week? We might expect an effect if there are, e.g., more f
 df %>% ggplot(aes(x = day, y = log(area))) +
   geom_point(shape = "_", size = 5, color = "steelblue", alpha = 0.7) + 
   theme_bw() 
+# ggsave("vis.png", plt, width = 4, height = 3, units = "in")
 ```
 
 Day of the week doesn't seem to make much difference. Maybe fire danger is slightly higher on the weekends? Hard to say without using a model.
