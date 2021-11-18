@@ -1,7 +1,7 @@
 ordinal_model_check <- function(mu_spec, disp_spec = "~1", data) {
-  library(tidyverse)
-  library(brms)
-  library(tidybayes)
+  # library(tidyverse)
+  # library(brms)
+  # library(tidybayes)
   
   n_draws <- 10
   

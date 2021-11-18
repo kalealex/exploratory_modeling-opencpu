@@ -1,6 +1,6 @@
 logitnormal_model_check <- function(mu_spec, sigma_spec = "~1", data) {
-  library(tidyverse)
-  library(gamlss)
+  # library(tidyverse)
+  # library(gamlss)
   
   # settings
   n_draws <- 10

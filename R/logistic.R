@@ -1,6 +1,6 @@
 logistic_model_check <- function(mu_spec, data) {
-  library(tidyverse)
-  library(gamlss)
+  # library(tidyverse)
+  # library(gamlss)
   
   # settings
   n_draws <- 10

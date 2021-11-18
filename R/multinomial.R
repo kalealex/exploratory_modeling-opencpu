@@ -1,7 +1,7 @@
 multinomial_model_check <- function(spec, data) {
-  library(tidyverse)
-  library(brms)
-  library(tidybayes)
+  # library(tidyverse)
+  # library(brms)
+  # library(tidybayes)
   
   n_draws <- 10
   
