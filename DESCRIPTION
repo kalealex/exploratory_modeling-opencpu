@@ -1,4 +1,4 @@
-Package: exploratory_modeling-opencpu
+Package: emc
 Type: Package
 Title: Exploratory model checks in EDA
 Version: 0.1.1
