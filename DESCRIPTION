@@ -1,4 +1,4 @@
-Package: exploratory_modeling
+Package: modelcheck
 Type: Package
 Title: Exploratory model checks in EDA
 Version: 0.1.1
