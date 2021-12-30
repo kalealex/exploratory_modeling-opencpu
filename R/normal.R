@@ -6,17 +6,17 @@ normal_model_check <- function(mu_spec, sigma_spec = "~1", data) {
   # read data from json
   data <- fromJSON(data)
   
-  # catch values of negative inf on log transform
-  log_trans_vars_mu <- str_match_all(mu_spec, "log\\(\\s*(.*?)\\s*\\)")[[1]][,2]
-  for (var_name in log_trans_vars_mu) {
-    # replace log({{var}}) with log_{{var}} in mu_spec
-    mu_spec <- str_replace_all(mu_spec, paste("log\\(", var_name, "\\)", sep = ""), paste("log_", var_name, sep = ""))
-  }
-  log_trans_vars_sigma <- str_match_all(sigma_spec, "log\\(\\s*(.*?)\\s*\\)")[[1]][,2]
-  for (var_name in log_trans_vars_sigma) {
-    # replace log({{var}}) with log_{{var}} in sigma_spec
-    sigma_spec <- str_replace_all(sigma_spec, paste("log\\(", var_name, "\\)", sep = ""), paste("log_", var_name, sep = ""))
-  }
+  # # catch values of negative inf on log transform
+  # log_trans_vars_mu <- str_match_all(mu_spec, "log\\(\\s*(.*?)\\s*\\)")[[1]][,2]
+  # for (var_name in log_trans_vars_mu) {
+  #   # replace log({{var}}) with log_{{var}} in mu_spec
+  #   mu_spec <- str_replace_all(mu_spec, paste("log\\(", var_name, "\\)", sep = ""), paste("log_", var_name, sep = ""))
+  # }
+  # log_trans_vars_sigma <- str_match_all(sigma_spec, "log\\(\\s*(.*?)\\s*\\)")[[1]][,2]
+  # for (var_name in log_trans_vars_sigma) {
+  #   # replace log({{var}}) with log_{{var}} in sigma_spec
+  #   sigma_spec <- str_replace_all(sigma_spec, paste("log\\(", var_name, "\\)", sep = ""), paste("log_", var_name, sep = ""))
+  # }
   
   # fit model
   mu_spec <- as.formula(mu_spec)
