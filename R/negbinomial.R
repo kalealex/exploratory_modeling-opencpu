@@ -4,7 +4,7 @@ negbinomial_model_check <- function(mu_spec, sigma_spec = "~1", data) {
   n_draws <- 30
 
   # read data from json
-  data <- fromJSON(data)
+  data <- fromJSON(data, simplifyVector = TRUE)
   
   # # catch values of negative inf on log transform
   # log_trans_vars_mu <- str_match_all(mu_spec, "log\\(\\s*(.*?)\\s*\\)")[[1]][,2]

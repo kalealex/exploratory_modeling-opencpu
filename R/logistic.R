@@ -4,7 +4,7 @@ logistic_model_check <- function(mu_spec, data) {
   n_draws <- 30
 
   # read data from json
-  data <- fromJSON(data)
+  data <- fromJSON(data, simplifyVector = TRUE)
   
   # # catch log transform
   # log_trans_vars_mu <- str_match_all(mu_spec, "log\\(\\s*(.*?)\\s*\\)")[[1]][,2]

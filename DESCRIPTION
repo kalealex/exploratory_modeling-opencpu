@@ -8,8 +8,8 @@ Maintainer: Alex Kale <kalea@uw.edu>
 License: Apache2
 LazyData: true
 Imports: 
-    jsonlite,
     tidyverse,
     gamlss,
     brms,
-    tidybayes
+    tidybayes,
+    jsonlite
