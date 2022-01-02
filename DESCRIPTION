@@ -8,7 +8,8 @@ Maintainer: Alex Kale <kalea@uw.edu>
 License: Apache2
 LazyData: true
 Imports: 
-    tidyverse,
+    dplyr,
+    magrittr,
     gamlss,
     brms,
     tidybayes,
