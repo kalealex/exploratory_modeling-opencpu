@@ -9,6 +9,7 @@ License: Apache2
 LazyData: true
 Imports: 
     dplyr,
+    tidyr,
     magrittr,
     gamlss,
     brms,
