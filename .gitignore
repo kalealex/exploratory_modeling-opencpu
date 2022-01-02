@@ -1,3 +1,4 @@
 *.pdf
 *.mov
 .Rhistory
+input.json
