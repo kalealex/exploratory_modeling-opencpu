@@ -16,11 +16,12 @@ ordinal_model_check <- function(mu_spec, disp_spec = "~1", data) {
   #   # replace log({{var}}) with log_{{var}} in sigma_spec
   #   disp_spec <- str_replace_all(disp_spec, paste("log\\(", var_name, "\\)", sep = ""), paste("log_", var_name, sep = ""))
   # }
-  disp_spec <- paste("disc", disp_spec)
 
   # get outcome variable and model names
   outcome_name <- sym(sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE)))
-  model_name <- sym(paste("normal", mu_spec, sigma_spec, sep = "| "))
+  model_name <- sym(paste("ordinal", mu_spec, disp_spec, sep = "| "))
+
+  disp_spec <- paste("disc", disp_spec)
   
   # fit model
   mu_spec <- as.formula(mu_spec)

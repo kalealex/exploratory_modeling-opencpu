@@ -15,7 +15,7 @@ logistic_model_check <- function(mu_spec, data) {
 
   # get outcome variable and model names
   outcome_name <- sym(sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE)))
-  model_name <- sym(paste("normal", mu_spec, sigma_spec, sep = "| "))
+  model_name <- sym(paste("logistic", mu_spec, sep = "| "))
   
   # fit model
   mu_spec <- as.formula(mu_spec)

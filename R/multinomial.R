@@ -13,8 +13,8 @@ multinomial_model_check <- function(spec, data) {
   # }
 
   # get outcome variable and model names
-  outcome_name <- sym(sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE)))
-  model_name <- sym(paste("normal", mu_spec, sigma_spec, sep = "| "))
+  outcome_name <- sym(sub("\\~.*", "", gsub(" ", "", spec, fixed = TRUE)))
+  model_name <- sym(paste("multinomial", spec, sep = "| "))
   
   # fit model
   spec <- as.formula(spec)
