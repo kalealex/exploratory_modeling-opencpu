@@ -17,6 +17,9 @@ negbinomial_model_check <- function(mu_spec, sigma_spec = "~1", data) {
   #   # replace log({{var}}) with log_{{var}} in sigma_spec
   #   sigma_spec <- str_replace_all(sigma_spec, paste("log\\(", var_name, "\\)", sep = ""), paste("log_", var_name, sep = ""))
   # }
+
+  # get outcome variable name
+  outcome_name <- sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE))
   
   # fit model
   mu_spec <- as.formula(mu_spec)
@@ -38,11 +41,11 @@ negbinomial_model_check <- function(mu_spec, sigma_spec = "~1", data) {
   # propagate uncertainty in fit to generate an ensemble of model predictions (mimic a posterior predictive distribution)
   output <- output %>%
     mutate(
-      .draw = list(1:n_draws),                            # generate list of draw numbers
+      draw = list(1:n_draws),                            # generate list of draw numbers
       t1 = map(df, ~rt(n_draws, .)),                      # simulate draws from t distribution to transform into log mu
       t2 = map(df, ~rt(n_draws, .)),                      # simulate draws from t distribution to transform into log sigma
     ) %>%
-    unnest(cols = c(".draw", "t1", "t2")) %>%
+    unnest(cols = c("draw", "t1", "t2")) %>%
     mutate(
       logmu = t1 * logmu.se + logmu.expectation,          # scale and shift t to get a sampling distribution of log mu
       logsigma = t2 * logsigma.se + logsigma.expectation, # scale and shift t to get a sampling distribution of log sigma
@@ -52,6 +55,12 @@ negbinomial_model_check <- function(mu_spec, sigma_spec = "~1", data) {
     rowwise() %>%
     mutate(
       prediction = rNBII(1, mu, sigma)                    # compute predictive distribution of counts
+    ) %>%
+    rename("data" =  eval(outcome_name)) %>%
+    pivot_longer(
+      cols = c("data", "prediction"),
+      names_to = "modelcheck_group",
+      values_to = outcome_name
     )
 
   return(list(message = "success", data = toJSON(output)))

@@ -17,6 +17,9 @@ ordinal_model_check <- function(mu_spec, disp_spec = "~1", data) {
   #   disp_spec <- str_replace_all(disp_spec, paste("log\\(", var_name, "\\)", sep = ""), paste("log_", var_name, sep = ""))
   # }
   disp_spec <- paste("disc", disp_spec)
+
+  # get outcome variable name
+  outcome_name <- sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE))
   
   # fit model
   mu_spec <- as.formula(mu_spec)
@@ -35,7 +38,17 @@ ordinal_model_check <- function(mu_spec, disp_spec = "~1", data) {
   
   # get predictive distribution (look how much easier this is with a Bayesian model)
   output <- data %>%
-    add_predicted_draws(model, seed = 14, n = n_draws)
+    add_predicted_draws(model, seed = 14, n = n_draws) %>%
+    rename(
+      draw = .draw,
+      prediction = .prediction,
+      "data" =  eval(outcome_name)
+    ) %>%
+    pivot_longer(
+      cols = c("data", "prediction"),
+      names_to = "modelcheck_group",
+      values_to = outcome_name
+    )
 
   return(list(message = "success", data = toJSON(output)))
 }

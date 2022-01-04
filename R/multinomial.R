@@ -11,6 +11,9 @@ multinomial_model_check <- function(spec, data) {
   #   # replace log({{var}}) with log_{{var}} in spec
   #   spec <- str_replace_all(spec, paste("log\\(", var_name, "\\)", sep = ""), paste("log_", var_name, sep = ""))
   # }
+
+  # get outcome variable name
+  outcome_name <- sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE))
   
   # fit model
   spec <- as.formula(spec)
@@ -26,7 +29,17 @@ multinomial_model_check <- function(spec, data) {
   
   # get predictive distribution (look how much easier this is with a Bayesian model)
   output <- data %>%
-    add_predicted_draws(model, seed = 14, n = n_draws)
+    add_predicted_draws(model, seed = 14, n = n_draws) %>%
+    rename(
+      draw = .draw,
+      prediction = .prediction,
+      "data" =  eval(outcome_name)
+    ) %>%
+    pivot_longer(
+      cols = c("data", "prediction"),
+      names_to = "modelcheck_group",
+      values_to = outcome_name
+    )
 
   return(list(message = "success", data = toJSON(output)))
 }

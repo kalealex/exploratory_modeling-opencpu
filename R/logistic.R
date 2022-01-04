@@ -12,6 +12,9 @@ logistic_model_check <- function(mu_spec, data) {
   #   # replace log({{var}}) with log_{{var}} in mu_spec
   #   mu_spec <- str_replace_all(mu_spec, paste("log\\(", var_name, "\\)", sep = ""), paste("log_", var_name, sep = ""))
   # }
+
+  # get outcome variable name
+  outcome_name <- sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE))
   
   # fit model
   mu_spec <- as.formula(mu_spec)
@@ -29,10 +32,10 @@ logistic_model_check <- function(mu_spec, data) {
   # propagate uncertainty in fit to generate an ensemble of model predictions (mimic a posterior predictive distribution)
   output <- output %>%
     mutate(
-      .draw = list(1:n_draws),                            # generate list of draw numbers
+      draw = list(1:n_draws),                            # generate list of draw numbers
       t = map(df, ~rt(n_draws, .))                        # simulate draws from t distribution to transform into logit mu
     ) %>%
-    unnest(cols = c(".draw", "t")) %>%
+    unnest(cols = c("draw", "t")) %>%
     mutate(
       logitmu = t * logitmu.se + logitmu.expectation,     # scale and shift t to get a sampling distribution of logit mu
       mu = plogis(logitmu)                                # backtransform to sampling distribution of mean probability
@@ -40,6 +43,12 @@ logistic_model_check <- function(mu_spec, data) {
     rowwise() %>%
     mutate(
       prediction = rbinom(1, 1, mu)                       # compute predictive distribution of binary outcomes
+    ) %>%
+    rename("data" =  eval(outcome_name)) %>%
+    pivot_longer(
+      cols = c("data", "prediction"),
+      names_to = "modelcheck_group",
+      values_to = outcome_name
     )
 
   return(list(message = "success", data = toJSON(output)))
