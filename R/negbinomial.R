@@ -18,8 +18,9 @@ negbinomial_model_check <- function(mu_spec, sigma_spec = "~1", data) {
   #   sigma_spec <- str_replace_all(sigma_spec, paste("log\\(", var_name, "\\)", sep = ""), paste("log_", var_name, sep = ""))
   # }
 
-  # get outcome variable name
-  outcome_name <- sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE))
+  # get outcome variable and model names
+  outcome_name <- sym(sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE)))
+  model_name <- sym(paste("normal", mu_spec, sigma_spec, sep = "| "))
   
   # fit model
   mu_spec <- as.formula(mu_spec)
@@ -56,11 +57,14 @@ negbinomial_model_check <- function(mu_spec, sigma_spec = "~1", data) {
     mutate(
       prediction = rNBII(1, mu, sigma)                    # compute predictive distribution of counts
     ) %>%
-    rename("data" =  eval(outcome_name)) %>%
+    rename(
+      data = !!outcome_name,
+      !!model_name := prediction
+    ) %>%
     pivot_longer(
-      cols = c("data", "prediction"),
+      cols = c("data", model_name),
       names_to = "modelcheck_group",
-      values_to = outcome_name
+      values_to = as.character(outcome_name)
     )
 
   return(list(message = "success", data = toJSON(output)))

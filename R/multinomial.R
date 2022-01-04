@@ -12,8 +12,9 @@ multinomial_model_check <- function(spec, data) {
   #   spec <- str_replace_all(spec, paste("log\\(", var_name, "\\)", sep = ""), paste("log_", var_name, sep = ""))
   # }
 
-  # get outcome variable name
-  outcome_name <- sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE))
+  # get outcome variable and model names
+  outcome_name <- sym(sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE)))
+  model_name <- sym(paste("normal", mu_spec, sigma_spec, sep = "| "))
   
   # fit model
   spec <- as.formula(spec)
@@ -32,13 +33,13 @@ multinomial_model_check <- function(spec, data) {
     add_predicted_draws(model, seed = 14, n = n_draws) %>%
     rename(
       draw = .draw,
-      prediction = .prediction,
-      "data" =  eval(outcome_name)
+      data = !!outcome_name,
+      !!model_name := .prediction
     ) %>%
     pivot_longer(
-      cols = c("data", "prediction"),
+      cols = c("data", model_name),
       names_to = "modelcheck_group",
-      values_to = outcome_name
+      values_to = as.character(outcome_name)
     )
 
   return(list(message = "success", data = toJSON(output)))
