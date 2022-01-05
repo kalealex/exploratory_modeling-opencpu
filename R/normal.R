@@ -7,7 +7,7 @@ normal_model_check <- function(mu_spec, sigma_spec = "~1", data) {
   # library(jsonlite)
 
   # settings
-  n_draws <- 30
+  n_draws <- 5
 
   # read data from json
   data <- fromJSON(data, simplifyVector = TRUE)

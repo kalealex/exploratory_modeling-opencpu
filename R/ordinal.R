@@ -1,6 +1,6 @@
 ordinal_model_check <- function(mu_spec, disp_spec = "~1", data) {
   
-  n_draws <- 30
+  n_draws <- 5
   
   # read data from json
   data <- fromJSON(data, simplifyVector = TRUE)

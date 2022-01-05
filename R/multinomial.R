@@ -1,6 +1,6 @@
 multinomial_model_check <- function(spec, data) {
   
-  n_draws <- 30
+  n_draws <- 5
 
   # read data from json
   data <- fromJSON(data, simplifyVector = TRUE)
