@@ -31,6 +31,7 @@ multinomial_model_check <- function(spec, data) {
   # get predictive distribution (look how much easier this is with a Bayesian model)
   output <- data %>%
     add_predicted_draws(model, seed = 14, n = n_draws) %>%
+    dplyr::select(-one_of(c(".row", ".chain", ".iteration"))) %>%
     rename(
       draw = .draw,
       data = !!outcome_name,
