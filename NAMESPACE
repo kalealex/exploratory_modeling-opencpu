@@ -1,3 +1,4 @@
+export(calc_residuals)
 export(logistic_model_check)
 export(merge_modelchecks)
 export(multinomial_model_check)
