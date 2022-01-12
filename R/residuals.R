@@ -6,6 +6,9 @@ calc_residuals <- function(df, outcome_name) {
     # outcome name as symbol
     outcome_name <- sym(outcome_name)
 
+    # filter out rows where residuals have already been calculated
+    df <- df %>% filter(!grepl("^res\\|.", modelcheck_group))
+
     # put data in wide format
     df_wide <- df %>% pivot_wider(names_from = modelcheck_group, values_from = !!outcome_name)
     
