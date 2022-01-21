@@ -34,9 +34,10 @@ negbinomial_model_check <- function(mu_spec, sigma_spec = "~1", data) {
     mutate(
       logmu.expectation = pred.mu$fit,                    # add fitted logmu and standard errors to dataframe
       logmu.se = pred.mu$se.fit,
-      df = df.residual(model),                            # get degrees of freedom
       logsigma.expectation = pred.sigma$fit,              # add fitted logsigma and standard errors to dataframe 
-      logsigma.se = pred.sigma$se.fit
+      logsigma.se = pred.sigma$se.fit,
+      df = df.residual(model),                            # get degrees of freedom
+      residual.se = sqrt(sum(residuals(model)^2) / df)    # get residual standard errors //todo: propagate
     )
   
   # propagate uncertainty in fit to generate an ensemble of model predictions (mimic a posterior predictive distribution)
@@ -45,17 +46,20 @@ negbinomial_model_check <- function(mu_spec, sigma_spec = "~1", data) {
       draw = list(1:n_draws),                            # generate list of draw numbers
       t1 = map(df, ~rt(n_draws, .)),                      # simulate draws from t distribution to transform into log mu
       t2 = map(df, ~rt(n_draws, .)),                      # simulate draws from t distribution to transform into log sigma
+      x = map(df, ~rchisq(n_draws, .))                    # simulate draws from chi-squared distribution to transform into residual sigmas
     ) %>%
-    unnest(cols = c("draw", "t1", "t2")) %>%
+    unnest(cols = c("draw", "t1", "t2", "x")) %>%
     mutate(
       logmu = t1 * logmu.se + logmu.expectation,          # scale and shift t to get a sampling distribution of log mu
       logsigma = t2 * logsigma.se + logsigma.expectation, # scale and shift t to get a sampling distribution of log sigma
       mu = exp(logmu),                                    # backtransform to sampling distributions of mu and sigma parameters
-      sigma = exp(logsigma)
+      sigma = exp(logsigma),
+      residual.sigma = sqrt(df * residual.se^2 / x)       # scale and take inverse of x to get a sampling distribution of sigmas
     ) %>%
     rowwise() %>%
     mutate(
-      prediction = rNBII(1, mu, sigma)                    # compute predictive distribution of counts
+      # compute predictive distribution of counts
+      prediction = rNBII(1, mu, sigma) + rNBII(1, 0, residual.sigma)
     ) %>%
     rename(
       data = !!outcome_name,

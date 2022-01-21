@@ -35,30 +35,37 @@ normal_model_check <- function(mu_spec, sigma_spec = "~1", data) {
   model <- eval(bquote(gamlss(.(mu_spec), sigma.fo = .(sigma_spec), data = data)))
   
   # get summary statistics describing model predictions
-  pred <- predict(model, se.fit = TRUE, type = "response")
+  pred.mu <- predict(model, se.fit = TRUE, type = "response")
+  pred.sigma <- predict(model, what = "sigma", se.fit = TRUE)
   output <- data %>%
     mutate(
-      mu.expectation = pred$fit,                          # add fitted predictions and standard errors to dataframe
-      se.expectation = pred$se.fit,
+      mu.expectation = pred.mu$fit,                       # add fitted mu and its standard error to dataframe
+      mu.se = pred.mu$se.fit,
+      logsigma.expectation = pred.sigma$fit,              # add fitted logsigma and its standard error to dataframe 
+      logsigma.se = pred.sigma$se.fit,
       df = df.residual(model),                            # get degrees of freedom
-      se.residual = sqrt(sum(residuals(model)^2) / df)    # get residual standard errors
+      residual.se = sqrt(sum(residuals(model)^2) / df)    # get residual standard errors
     )
   
   # propagate uncertainty in fit to generate an ensemble of model predictions (mimic a posterior predictive distribution)
   output <- output %>%
     mutate(
-      draw = list(1:n_draws),                            # generate list of draw numbers
-      t = map(df, ~rt(n_draws, .)),                       # simulate draws from t distribution to transform into means
-      x = map(df, ~rchisq(n_draws, .))                    # simulate draws from chi-squared distribution to transform into sigmas
+      draw = list(1:n_draws),                             # generate list of draw numbers
+      t1 = map(df, ~rt(n_draws, .)),                      # simulate draws from t distribution to transform into means
+      t2 = map(df, ~rt(n_draws, .)),                      # simulate draws from t distribution to transform into log sigma
+      x = map(df, ~rchisq(n_draws, .))                    # simulate draws from chi-squared distribution to transform into residual sigmas
     ) %>%
-    unnest(cols = c("draw", "t", "x")) %>%
+    unnest(cols = c("draw", "t1", "t2", "x")) %>%
     mutate(
-      mu = t * se.expectation + mu.expectation,           # scale and shift t to get a sampling distribution of means
-      sigma = sqrt(df * se.residual^2 / x)                # scale and take inverse of x to get a sampling distribution of sigmas
+      mu = t1 * mu.se + mu.expectation,                   # scale and shift t to get a sampling distribution of means
+      logsigma = t2 * logsigma.se + logsigma.expectation, # scale and shift t to get a sampling distribution of log sigma
+      sigma = exp(logsigma),                              # backtransform to sampling distribution of sigma parameter
+      residual.sigma = sqrt(df * residual.se^2 / x)       # scale and take inverse of x to get a sampling distribution of sigmas
     ) %>%
     rowwise() %>%
     mutate(
-      prediction = rnorm(1, mu, sigma)                    # compute predictive distribution in backtransformed units
+      # compute predictive distribution in backtransformed units
+      prediction = rnorm(1, mu, sigma) + rnorm(1, 0, residual.sigma)
     ) %>%
     rename(
       data = !!outcome_name,
