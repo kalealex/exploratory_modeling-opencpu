@@ -35,8 +35,8 @@ negbinomial_model_check <- function(mu_spec, sigma_spec = "~1", data) {
       logmu.expectation = pred.mu$fit,                    # add fitted logmu and standard errors to dataframe
       logmu.se = pred.mu$se.fit,
       logsigma.expectation = pred.sigma$fit,              # add fitted logsigma and standard errors to dataframe 
-      logsigma.se = pred.sigma$se.fit#,
-      # df = df.residual(model),                            # get degrees of freedom
+      logsigma.se = pred.sigma$se.fit,
+      df = df.residual(model)#,                           # get degrees of freedom
       # residual.se = sqrt(sum(residuals(model)^2) / df)    # get residual standard errors //todo: propagate
     )
   

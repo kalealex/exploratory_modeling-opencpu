@@ -42,8 +42,8 @@ normal_model_check <- function(mu_spec, sigma_spec = "~1", data) {
       mu.expectation = pred.mu$fit,                       # add fitted mu and its standard error to dataframe
       mu.se = pred.mu$se.fit,
       logsigma.expectation = pred.sigma$fit,              # add fitted logsigma and its standard error to dataframe 
-      logsigma.se = pred.sigma$se.fit#,
-      # df = df.residual(model),                            # get degrees of freedom
+      logsigma.se = pred.sigma$se.fit,
+      df = df.residual(model)#,                           # get degrees of freedom
       # residual.se = sqrt(sum(residuals(model)^2) / df)    # get residual standard errors
     )
   
