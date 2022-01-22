@@ -53,7 +53,8 @@ logistic_model_check <- function(mu_spec, data) {
       cols = c("data", model_name),
       names_to = "modelcheck_group",
       values_to = as.character(outcome_name)
-    )
+    ) %>%
+    dplyr::select(-one_of("logitmu.expectation", "logitmu.se", "df", "t", "logitmu", "mu"))
 
   return(list(message = "success", data = toJSON(output)))
 }

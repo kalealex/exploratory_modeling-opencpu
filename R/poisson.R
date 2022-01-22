@@ -26,7 +26,7 @@ poisson_model_check <- function(mu_spec, data) {
   output <- data %>%
     mutate(
       logmu.expectation = pred$fit,                       # add fitted predictions and standard errors to dataframe
-      logse.expectation = pred$se.fit,
+      logmu.se = pred$se.fit,
       df = df.residual(model)                             # get degrees of freedom
     )
   
@@ -38,7 +38,7 @@ poisson_model_check <- function(mu_spec, data) {
     ) %>%
     unnest(cols = c("draw", "t")) %>%
     mutate(
-      logmu = t * logse.expectation + logmu.expectation,  # scale and shift t to get a sampling distribution of log mean rates
+      logmu = t * logmu.se + logmu.expectation,  # scale and shift t to get a sampling distribution of log mean rates
       mu = exp(logmu)                                     # backtransform to sampling distribution of mean rate parameter
     ) %>%
     rowwise() %>%
@@ -53,7 +53,8 @@ poisson_model_check <- function(mu_spec, data) {
       cols = c("data", model_name),
       names_to = "modelcheck_group",
       values_to = as.character(outcome_name)
-    )
+    ) %>%
+    dplyr::select(-one_of("logmu.expectation", "logmu.se", "df", "t", "logmu", "mu"))
 
   return(list(message = "success", data = toJSON(output)))
 }

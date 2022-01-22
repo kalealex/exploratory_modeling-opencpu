@@ -69,7 +69,8 @@ negbinomial_model_check <- function(mu_spec, sigma_spec = "~1", data) {
       cols = c("data", model_name),
       names_to = "modelcheck_group",
       values_to = as.character(outcome_name)
-    )
+    ) %>%
+    dplyr::select(-one_of("logmu.expectation", "logmu.se", "logsigma.expectation", "logsigma.se", "df", "t1", "t2", "logmu", "mu", "logsigma", "sigma"))
 
   return(list(message = "success", data = toJSON(output)))
 }

@@ -1,4 +1,7 @@
 *.pdf
 *.mov
 .Rhistory
+.RData
 input.json
+modelcheck.json
+residual.json
