@@ -339,13 +339,19 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
 
     # read data from json
     df <- fromJSON(df, simplifyVector = TRUE)
+    # # dev
+    # df <- read_json("../opencpu/R/input.json", simplifyVector = TRUE)
+    # # dev
     # # test
-    # df <- read_json("../../opencpu/R/input.json", simplifyVector = TRUE)
+    # df <- read_json("../opencpu/R/testdata.json", simplifyVector = TRUE)
     # # test
 
-    # isolated data from model predictions for modeling
+    # isolate data from model predictions for modeling
     if ("modelcheck_group" %in% colnames(df)) {
-        data <- df %>% filter(modelcheck_group == "data")
+        # drop model outputs from copy of data to use for modeling
+        data <- df %>% 
+            filter(modelcheck_group == "data", draw == 1) %>%
+            dplyr::select(-one_of(c("modelcheck_group", "draw")))
         # Check input df to see which model predictions and residuals are already there
         cur_models <- unique(df$modelcheck_group)
     } else {
@@ -356,7 +362,7 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
 
     #  Filter previously run models from set of models to run
     models <- fromJSON(models, simplifyVector = TRUE)
-    # # test
+    # # dev
     # # TODO: create this object in the web app
     # models <- tibble(
     #     name = c("normal| mpg ~ 1| ~1", "normal| mpg ~ cyl| ~cyl"),
@@ -365,6 +371,9 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
     #     sigma_spec = c("~1", "~cyl")
     # )
     # outcome_name <- "mpg"
+    # # dev
+    # # test
+    # models <- read_json("../opencpu/R/testmodels.json", simplifyVector = TRUE)
     # # test
     models <- models %>% filter(!name %in% cur_models)
 
@@ -390,7 +399,7 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
     #  Merge model check results together
     new_merged <- merge_modelchecks_array(new_models)
     if ("modelcheck_group" %in% colnames(df)) {
-        output <- merge_modelchecks(df, new_models)
+        output <- merge_modelchecks(df, new_merged)
     } else {
         output <- new_merged
     }
