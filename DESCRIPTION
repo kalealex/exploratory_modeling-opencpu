@@ -12,6 +12,7 @@ Imports:
     tidyr,
     purrr,
     magrittr,
+    stringr,
     gamlss,
     gamlss.dist,
     brms,
