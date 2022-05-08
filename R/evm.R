@@ -70,7 +70,7 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
                 )
             )
         # replace {{outcome_name}} with log_{{outcome_name}}
-        mu_spec <- str_replace_all(mu_spec, outcome_name, paste("log", outcome_name, sep = "_"))
+        mu_spec <- str_replace_all(mu_spec, as.character(outcome_name), paste("log", outcome_name, sep = "_"))
         
         # fit model
         mu_spec <- as.formula(mu_spec)
@@ -137,7 +137,7 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
                 )
             )
         # replace {{outcome_name}} with log_{{outcome_name}}
-        mu_spec <- str_replace_all(mu_spec, outcome_name, paste("logit", outcome_name, sep = "_"))
+        mu_spec <- str_replace_all(mu_spec, as.character(outcome_name), paste("logit", outcome_name, sep = "_"))
         
         # fit model
         mu_spec <- as.formula(mu_spec)
