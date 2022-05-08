@@ -55,6 +55,136 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
             ) %>%
             dplyr::select(-one_of("mu.expectation", "mu.se", "logsigma.expectation", "logsigma.se", "df", "t1", "t2", "mu", "logsigma", "sigma"))
     }
+    lognormal_model_check <- function(mu_spec, sigma_spec = "~1", data) {
+        
+        # get outcome variable and model names
+        outcome_name <- sym(sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE)))
+        model_name <- sym(paste("log normal", mu_spec, sigma_spec, sep = "| "))
+        
+        # compute log transform of outcome variable and add to dataframe
+        data <- data %>%
+            mutate(
+                "log_{{outcome_name}}" := if_else({{outcome_name}}==0.0,
+                                     log(0.001), # avoid -inf errors by fudging the zeros a bit
+                                     log({{outcome_name}})
+                )
+            )
+        # replace {{outcome_name}} with log_{{outcome_name}}
+        mu_spec <- str_replace_all(mu_spec, outcome_name, paste("log", outcome_name, sep = "_"))
+        
+        # fit model
+        mu_spec <- as.formula(mu_spec)
+        sigma_spec <- as.formula(sigma_spec)
+        model <- eval(bquote(gamlss(.(mu_spec), sigma.fo = .(sigma_spec), data = data)))
+        
+        # get summary statistics describing model predictions
+        pred.mu <- predict(model, se.fit = TRUE, type = "response")
+        pred.sigma <- predict(model, what = "sigma", se.fit = TRUE)
+        output <- data %>%
+            mutate(
+                mu.expectation = pred.mu$fit,                       # add fitted mu and its standard error to dataframe
+                mu.se = pred.mu$se.fit,
+                logsigma.expectation = pred.sigma$fit,              # add fitted logsigma and its standard error to dataframe 
+                logsigma.se = pred.sigma$se.fit,
+                df = df.residual(model)                             # get degrees of freedom
+            )
+        
+        # propagate uncertainty in fit to generate an ensemble of model predictions (mimic a posterior predictive distribution)
+        output <- output %>%
+            mutate(
+                draw = list(1:n_draws),                             # generate list of draw numbers
+                t1 = map(df, ~rt(n_draws, .)),                      # simulate draws from t distribution to transform into means
+                t2 = map(df, ~rt(n_draws, .))                       # simulate draws from t distribution to transform into log sigma
+            ) %>%
+            unnest(cols = c("draw", "t1", "t2")) %>%
+            mutate(
+                mu = t1 * mu.se + mu.expectation,                   # scale and shift t to get a sampling distribution of means
+                logsigma = t2 * logsigma.se + logsigma.expectation, # scale and shift t to get a sampling distribution of log sigma
+                sigma = exp(logsigma)                               # backtransform to sampling distribution of sigma parameter
+            ) %>%
+            rowwise() %>%
+            mutate(
+                # compute predictive distribution in backtransformed units
+                prediction = rlnorm(1, mu, sigma)
+            ) %>%
+            rename(
+                data = !!outcome_name,
+                !!model_name := prediction
+            ) %>%
+            pivot_longer(
+                cols = c("data", model_name),
+                names_to = "modelcheck_group",
+                values_to = as.character(outcome_name)
+            ) %>%
+            dplyr::select(-one_of("mu.expectation", "mu.se", "logsigma.expectation", "logsigma.se", "df", "t1", "t2", "mu", "logsigma", "sigma", paste("log", outcome_name, sep = "_")))
+    }
+    logitnormal_model_check <- function(mu_spec, sigma_spec = "~1", data) {
+        
+        # get outcome variable and model names
+        outcome_name <- sym(sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE)))
+        model_name <- sym(paste("logit normal", mu_spec, sigma_spec, sep = "| "))
+        
+        # compute log transform of outcome variable and add to dataframe
+        data <- data %>%
+            mutate(
+                "logit_{{outcome_name}}" := if_else({{outcome_name}}==0.0,
+                                                  qlogis(0.001), # avoid -inf errors by fudging the zeros a bit
+                                                  if_else({{outcome_name}}==1.0,
+                                                          qlogis(0.999), # avoid inf errors by fudging the ones a bit
+                                                          qlogis({{outcome_name}})
+                                                  ),
+                                                  
+                )
+            )
+        # replace {{outcome_name}} with log_{{outcome_name}}
+        mu_spec <- str_replace_all(mu_spec, outcome_name, paste("logit", outcome_name, sep = "_"))
+        
+        # fit model
+        mu_spec <- as.formula(mu_spec)
+        sigma_spec <- as.formula(sigma_spec)
+        model <- eval(bquote(gamlss(.(mu_spec), sigma.fo = .(sigma_spec), data = data)))
+        
+        # get summary statistics describing model predictions
+        pred.mu <- predict(model, se.fit = TRUE, type = "response")
+        pred.sigma <- predict(model, what = "sigma", se.fit = TRUE)
+        output <- data %>%
+            mutate(
+                mu.expectation = pred.mu$fit,                       # add fitted mu and its standard error to dataframe
+                mu.se = pred.mu$se.fit,
+                logsigma.expectation = pred.sigma$fit,              # add fitted logsigma and its standard error to dataframe 
+                logsigma.se = pred.sigma$se.fit,
+                df = df.residual(model)                             # get degrees of freedom
+            )
+        
+        # propagate uncertainty in fit to generate an ensemble of model predictions (mimic a posterior predictive distribution)
+        output <- output %>%
+            mutate(
+                draw = list(1:n_draws),                             # generate list of draw numbers
+                t1 = map(df, ~rt(n_draws, .)),                      # simulate draws from t distribution to transform into means
+                t2 = map(df, ~rt(n_draws, .))                       # simulate draws from t distribution to transform into log sigma
+            ) %>%
+            unnest(cols = c("draw", "t1", "t2")) %>%
+            mutate(
+                mu = t1 * mu.se + mu.expectation,                   # scale and shift t to get a sampling distribution of means
+                logsigma = t2 * logsigma.se + logsigma.expectation, # scale and shift t to get a sampling distribution of log sigma
+                sigma = exp(logsigma)                               # backtransform to sampling distribution of sigma parameter
+            ) %>%
+            rowwise() %>%
+            mutate(
+                # compute predictive distribution in backtransformed units
+                prediction = plogis(rnorm(1, mu, sigma))
+            ) %>%
+            rename(
+                data = !!outcome_name,
+                !!model_name := prediction
+            ) %>%
+            pivot_longer(
+                cols = c("data", model_name),
+                names_to = "modelcheck_group",
+                values_to = as.character(outcome_name)
+            ) %>%
+            dplyr::select(-one_of("mu.expectation", "mu.se", "logsigma.expectation", "logsigma.se", "df", "t1", "t2", "mu", "logsigma", "sigma", paste("logit", outcome_name, sep = "_")))
+    }
     logistic_model_check <- function(mu_spec, data) {
         
         # get outcome variable and model names
@@ -363,7 +493,7 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
     #  Filter previously run models from set of models to run
     models <- fromJSON(models, simplifyVector = TRUE)
     # # dev
-    # # TODO: create this object in the web app
+    # # we create this object in the web app
     # models <- tibble(
     #     name = c("normal| mpg ~ 1| ~1", "normal| mpg ~ cyl| ~cyl"),
     #     family = c("normal", "normal"),
@@ -383,6 +513,10 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
         # run modelcheck depending on family
         if(models[[i, "family"]] == "normal") {
             new_models[[i]] <- normal_model_check(models[[i, "mu_spec"]], models[[i, "sigma_spec"]], data) 
+        } else if(models[[i, "family"]] == "lognormal") {
+            new_models[[i]] <- lognormal_model_check(models[[i, "mu_spec"]], models[[i, "sigma_spec"]], data)
+        } else if(models[[i, "family"]] == "logitnormal") {
+            new_models[[i]] <- logitnormal_model_check(models[[i, "mu_spec"]], models[[i, "sigma_spec"]], data)
         } else if(models[[i, "family"]] == "logistic") {
             new_models[[i]] <- logistic_model_check(models[[i, "mu_spec"]], data)
         } else if(models[[i, "family"]] == "poisson") {
