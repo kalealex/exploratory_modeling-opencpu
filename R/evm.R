@@ -427,16 +427,21 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
         # order by draw and modelcheck_group
         output <- output[order(output$modelcheck_group, output$draw),]
     }
-    calc_residuals <- function(df, outcome_name) {
+    calc_residuals <- function(df, outcome_name, models) {
         
         # outcome name as symbol
         outcome_name <- sym(outcome_name)
+        
+        # get unique model names (for unnesting df_wide below)
+        model_names_vect <- c("data", unique(models$name))
         
         # filter out rows where residuals have already been calculated
         df <- df %>% filter(!grepl("^res\\|.", modelcheck_group))
         
         # put data in wide format
-        df_wide <- df %>% pivot_wider(names_from = modelcheck_group, values_from = !!outcome_name)
+        df_wide <- df %>% 
+          pivot_wider(names_from = modelcheck_group, values_from = !!outcome_name, values_fn = list) %>%
+          unnest(cols = all_of(model_names_vect)) # needed to avoid nested lists of duplicates
         
         # get list of models whose predictions are included in this dataframe
         model_names <- setdiff(names(df_wide),c(names(df), "data"))
@@ -540,7 +545,7 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
 
     #  Calculate residuals if they aren't already in the output
     if(residuals) {
-        output <- calc_residuals(output, outcome_name)
+        output <- calc_residuals(output, outcome_name, models)
     }
 
     return(list(message = "success", data = toJSON(output)))
