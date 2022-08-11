@@ -59,7 +59,7 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
         
         # get outcome variable and model names
         outcome_name <- sym(sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE)))
-        model_name <- sym(paste("log normal", mu_spec, sigma_spec, sep = "| "))
+        model_name <- sym(paste("lognormal", mu_spec, sigma_spec, sep = "| "))
         
         # compute log transform of outcome variable and add to dataframe
         data <- data %>%
@@ -122,7 +122,7 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
         
         # get outcome variable and model names
         outcome_name <- sym(sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE)))
-        model_name <- sym(paste("logit normal", mu_spec, sigma_spec, sep = "| "))
+        model_name <- sym(paste("logitnormal", mu_spec, sigma_spec, sep = "| "))
         
         # compute log transform of outcome variable and add to dataframe
         data <- data %>%
@@ -188,8 +188,29 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
     logistic_model_check <- function(mu_spec, data) {
         
         # get outcome variable and model names
-        outcome_name <- sym(sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE)))
+        outcome_name <- sub("\\~.*", "", gsub(" ", "", mu_spec, fixed = TRUE))
+        dummy_outcome <- sym(paste("dummy", outcome_name, sep = "_"))
+        outcome_name <- sym(outcome_name)
         model_name <- sym(paste("logistic", mu_spec, sep = "| "))
+        
+        # make sure that outcome variable is coded as binary:
+        # create lookups
+        outcome_values <- data %>% 
+          dplyr::select(outcome_name) %>% 
+          distinct() %>% 
+          arrange() %>% 
+          as.vector()
+        outcome_values <- outcome_values[[1]]
+        dummy_values <- 0:(length(outcome_values) - 1)
+        names(dummy_values) = outcome_values
+        reverse_dummy_values <- names(dummy_values)
+        names(reverse_dummy_values) = unname(dummy_values)
+        # create dummy variable and add to model spec
+        data <- data %>% 
+          mutate(
+            !!dummy_outcome := unname(dummy_values[!!outcome_name])
+          )
+        mu_spec <- gsub(as.character(outcome_name), as.character(dummy_outcome), mu_spec)
         
         # fit model
         mu_spec <- as.formula(mu_spec)
@@ -220,15 +241,18 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
                 prediction = rbinom(1, 1, mu)                       # compute predictive distribution of binary outcomes
             ) %>%
             rename(
-                data = !!outcome_name,
+                data = !!dummy_outcome,
                 !!model_name := prediction
             ) %>%
             pivot_longer(
                 cols = c("data", model_name),
                 names_to = "modelcheck_group",
-                values_to = as.character(outcome_name)
+                values_to = as.character(dummy_outcome)
             ) %>%
-            dplyr::select(-one_of("logitmu.expectation", "logitmu.se", "df", "t", "logitmu", "mu"))
+            mutate(
+              !!outcome_name := unname(reverse_dummy_values[as.character(!!dummy_outcome)])
+            ) %>%
+            dplyr::select(-one_of("logitmu.expectation", "logitmu.se", "df", "t", "logitmu", "mu", as.character(dummy_outcome)))
     }
     poisson_model_check <- function(mu_spec, data) {
         
@@ -439,7 +463,7 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
         df <- df %>% filter(!grepl("^res\\|.", modelcheck_group))
         
         # put data in wide format
-        df_wide <- df %>% 
+        df_wide <- df %>%
           pivot_wider(names_from = modelcheck_group, values_from = !!outcome_name, values_fn = list) %>%
           unnest(cols = all_of(model_names_vect)) # needed to avoid nested lists of duplicates
         
