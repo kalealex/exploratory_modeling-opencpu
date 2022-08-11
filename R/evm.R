@@ -1,5 +1,5 @@
 add_model <- function(df, models, outcome_name, residuals = TRUE) {
-    
+  
     # settings
     n_draws <- 5
     # model check fuctions
@@ -481,10 +481,28 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
             model_name <- model_names[[i]]
             
             # calculate residual
-            df_wide <- df_wide %>%
+            if (startsWith(as.character(model_name), "logistic")) {
+              # create lookup to transform outcome units
+              outcome_values <- df %>% 
+                dplyr::select(outcome_name) %>% 
+                distinct() %>% 
+                arrange() %>% 
+                as.vector()
+              outcome_values <- outcome_values[[1]]
+              dummy_values <- 0:(length(outcome_values) - 1)
+              names(dummy_values) = outcome_values
+              
+              df_wide <- df_wide %>%
                 mutate(
-                    !!residual_name := data - !!model_name
+                  !!residual_name := as.character(unname(dummy_values[data]) - unname(dummy_values[!!model_name]))
                 )
+            } else {
+              df_wide <- df_wide %>%
+                mutate(
+                  !!residual_name := data - !!model_name
+                )
+            }
+            
         }
         
         # put data back into long format for output
@@ -503,6 +521,8 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
     # # dev
     # # test
     # df <- read_json("../opencpu/R/testdata.json", simplifyVector = TRUE)
+    # df <- read_json("input-fires.json", simplifyVector = TRUE)
+    # residuals = TRUE
     # # test
 
     # isolate data from model predictions for modeling
@@ -513,6 +533,9 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
             dplyr::select(-one_of(c("modelcheck_group", "draw")))
         # Check input df to see which model predictions and residuals are already there
         cur_models <- unique(df$modelcheck_group)
+        # filter out residual names from list of models already in input dataframe
+        res_idx <- which(grepl("^res\\|.", cur_models))
+        cur_models = cur_models[-res_idx]
     } else {
         data <- df
         # Create empty set of models.
@@ -520,21 +543,27 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
     }
 
     #  Filter previously run models from set of models to run
-    models <- fromJSON(models, simplifyVector = TRUE)
+    all_models <- fromJSON(models, simplifyVector = TRUE)
     # # dev
     # # we create this object in the web app
-    # models <- tibble(
+    # all_models <- tibble(
     #     name = c("normal| mpg ~ 1| ~1", "normal| mpg ~ cyl| ~cyl"),
     #     family = c("normal", "normal"),
     #     mu_spec = c("mpg ~ 1", "mpg ~ cyl"),
     #     sigma_spec = c("~1", "~cyl")
     # )
-    # outcome_name <- "mpg"
     # # dev
     # # test
-    # models <- read_json("../opencpu/R/testmodels.json", simplifyVector = TRUE)
+    # all_models <- read_json("../opencpu/R/testmodels.json", simplifyVector = TRUE)
+    # all_models <- tibble(
+    #   name = c("poisson| relative_humidity ~ temperature", "negbinomial| relative_humidity ~ temperature| ~1"),
+    #   family = c("poisson", "negbinomial"),
+    #   mu_spec = c("relative_humidity ~ temperature", "relative_humidity ~ temperature"),
+    #   sigma_spec = c(NA, "~1")
+    # )
+    # outcome_name <- "relative_humidity"
     # # test
-    models <- models %>% filter(!name %in% cur_models)
+    models <- all_models %>% filter(!name %in% cur_models)
 
     #  Call a list of model check functions for remaining models
     new_models <- list()
@@ -569,7 +598,7 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
 
     #  Calculate residuals if they aren't already in the output
     if(residuals) {
-        output <- calc_residuals(output, outcome_name, models)
+        output <- calc_residuals(output, outcome_name, all_models)
     }
 
     return(list(message = "success", data = toJSON(output)))
