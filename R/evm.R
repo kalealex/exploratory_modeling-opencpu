@@ -451,13 +451,13 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
         # order by draw and modelcheck_group
         output <- output[order(output$modelcheck_group, output$draw),]
     }
-    calc_residuals <- function(df, outcome_name, models) {
+    calc_residuals <- function(df, outcome_name, all_models) {
         
         # outcome name as symbol
         outcome_name <- sym(outcome_name)
         
         # get unique model names (for unnesting df_wide below)
-        model_names_vect <- c("data", unique(models$name))
+        model_names_vect <- c("data", unique(all_models$name))
         
         # filter out rows where residuals have already been calculated
         df <- df %>% filter(!grepl("^res\\|.", modelcheck_group))
@@ -502,7 +502,6 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
                   !!residual_name := data - !!model_name
                 )
             }
-            
         }
         
         # put data back into long format for output
@@ -520,7 +519,7 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
     # df <- read_json("../opencpu/R/input.json", simplifyVector = TRUE)
     # # dev
     # # test
-    # df <- read_json("../opencpu/R/testdata.json", simplifyVector = TRUE)
+    # df <- read_json("testdata.json", simplifyVector = TRUE)
     # df <- read_json("input-fires.json", simplifyVector = TRUE)
     # residuals = TRUE
     # # test
@@ -554,7 +553,7 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
     # )
     # # dev
     # # test
-    # all_models <- read_json("../opencpu/R/testmodels.json", simplifyVector = TRUE)
+    # all_models <- read_json("testmodels.json", simplifyVector = TRUE)
     # all_models <- tibble(
     #   name = c("poisson| relative_humidity ~ temperature", "negbinomial| relative_humidity ~ temperature| ~1"),
     #   family = c("poisson", "negbinomial"),
