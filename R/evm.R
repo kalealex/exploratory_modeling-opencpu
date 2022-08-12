@@ -475,34 +475,34 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
         model_names <- lapply(model_names, sym)
 
         # iterate through models
-        # for (i in 1:length(model_names)) {
-        #     # index for current model
-        #     residual_name <- residual_names[[i]]
-        #     model_name <- model_names[[i]]
-        # 
-        #     # calculate residual
-        #     if (startsWith(as.character(model_name), "logistic")) {
-        #       # create lookup to transform outcome units
-        #       outcome_values <- df %>%
-        #         dplyr::select(outcome_name) %>%
-        #         distinct() %>%
-        #         arrange() %>%
-        #         as.vector()
-        #       outcome_values <- outcome_values[[1]]
-        #       dummy_values <- 0:(length(outcome_values) - 1)
-        #       names(dummy_values) = outcome_values
-        # 
-        #       df_wide <- df_wide %>%
-        #         mutate(
-        #           !!residual_name := as.character(unname(dummy_values[data]) - unname(dummy_values[!!model_name]))
-        #         )
-        #     } else {
-        #       df_wide <- df_wide %>%
-        #         mutate(
-        #           !!residual_name := data - !!model_name
-        #         )
-        #     }
-        # }
+        for (i in 1:length(model_names)) {
+            # index for current model
+            residual_name <- residual_names[[i]]
+            model_name <- model_names[[i]]
+
+            # calculate residual
+            if (startsWith(as.character(model_name), "logistic")) {
+              # create lookup to transform outcome units
+              outcome_values <- df %>%
+                dplyr::select(outcome_name) %>%
+                distinct() %>%
+                arrange() %>%
+                as.vector()
+              outcome_values <- outcome_values[[1]]
+              dummy_values <- 0:(length(outcome_values) - 1)
+              names(dummy_values) = outcome_values
+
+              df_wide <- df_wide %>%
+                mutate(
+                  !!residual_name := as.character(unname(dummy_values[data]) - unname(dummy_values[!!model_name]))
+                )
+            } else {
+              df_wide <- df_wide %>%
+                mutate(
+                  !!residual_name := data - !!model_name
+                )
+            }
+        }
 
         # put data back into long format for output
         output <- df_wide %>%
