@@ -464,53 +464,53 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
         
         # put data in wide format
         df_wide <- df %>%
-          pivot_wider(names_from = modelcheck_group, values_from = !!outcome_name, values_fn = list) %>%
-          unnest(cols = all_of(model_names_vect)) # needed to avoid nested lists of duplicates
-        # 
-        # # get list of models whose predictions are included in this dataframe
-        # model_names <- setdiff(names(df_wide),c(names(df), "data"))
-        # 
-        # # model and residual names as symbols
-        # residual_names <- lapply(model_names, function (model) { sym(paste("res", model, sep = "| ")) })
-        # model_names <- lapply(model_names, sym)
-        # 
-        # # iterate through models
-        # for (i in 1:length(model_names)) {
-        #     # index for current model
-        #     residual_name <- residual_names[[i]]
-        #     model_name <- model_names[[i]]
-        #     
-        #     # calculate residual
-        #     if (startsWith(as.character(model_name), "logistic")) {
-        #       # create lookup to transform outcome units
-        #       outcome_values <- df %>% 
-        #         dplyr::select(outcome_name) %>% 
-        #         distinct() %>% 
-        #         arrange() %>% 
-        #         as.vector()
-        #       outcome_values <- outcome_values[[1]]
-        #       dummy_values <- 0:(length(outcome_values) - 1)
-        #       names(dummy_values) = outcome_values
-        #       
-        #       df_wide <- df_wide %>%
-        #         mutate(
-        #           !!residual_name := as.character(unname(dummy_values[data]) - unname(dummy_values[!!model_name]))
-        #         )
-        #     } else {
-        #       df_wide <- df_wide %>%
-        #         mutate(
-        #           !!residual_name := data - !!model_name
-        #         )
-        #     }
-        # }
-        # 
-        # # put data back into long format for output
-        # output <- df_wide %>%
-        #     pivot_longer(
-        #         cols = c("data", sapply(model_names, as.character), sapply(residual_names, as.character)),
-        #         names_to = "modelcheck_group",
-        #         values_to = as.character(outcome_name)
-        #     )
+          pivot_wider(names_from = modelcheck_group, values_from = !!outcome_name, values_fn = list) #%>%
+          # unnest(cols = all_of(model_names_vect)) # needed to avoid nested lists of duplicates
+
+        # get list of models whose predictions are included in this dataframe
+        model_names <- setdiff(names(df_wide), c(names(df), "data"))
+
+        # model and residual names as symbols
+        residual_names <- lapply(model_names, function (model) { sym(paste("res", model, sep = "| ")) })
+        model_names <- lapply(model_names, sym)
+
+        # iterate through models
+        for (i in 1:length(model_names)) {
+            # index for current model
+            residual_name <- residual_names[[i]]
+            model_name <- model_names[[i]]
+
+            # calculate residual
+            if (startsWith(as.character(model_name), "logistic")) {
+              # create lookup to transform outcome units
+              outcome_values <- df %>%
+                dplyr::select(outcome_name) %>%
+                distinct() %>%
+                arrange() %>%
+                as.vector()
+              outcome_values <- outcome_values[[1]]
+              dummy_values <- 0:(length(outcome_values) - 1)
+              names(dummy_values) = outcome_values
+
+              df_wide <- df_wide %>%
+                mutate(
+                  !!residual_name := as.character(unname(dummy_values[data]) - unname(dummy_values[!!model_name]))
+                )
+            } else {
+              df_wide <- df_wide %>%
+                mutate(
+                  !!residual_name := data - !!model_name
+                )
+            }
+        }
+
+        # put data back into long format for output
+        output <- df_wide %>%
+            pivot_longer(
+                cols = c("data", sapply(model_names, as.character), sapply(residual_names, as.character)),
+                names_to = "modelcheck_group",
+                values_to = as.character(outcome_name)
+            )
     }
 
     # read data from json
