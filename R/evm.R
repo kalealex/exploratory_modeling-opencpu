@@ -439,14 +439,16 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
         
         # iterate through list of dataframes
         output <- dfs[[1]] # start output file with first dataframe
-        dfs[- 1]           # remove first dataframe from initial list to avoid duplicating it
-        lapply(dfs, function(df) {
-            # drop redundant rows from df since we've already set aside the original data from the first df
-            df <- df %>% filter(modelcheck_group != "data")
+        dfs <- dfs[- 1]    # remove first dataframe from initial list to avoid duplicating it
+        if (length(dfs) > 0) {
+          for(i in 1:length(dfs)) {
+            # drop redundant rows from d since we've already set aside the original data from the first df
+            d <- dfs[[i]] %>% filter(modelcheck_group != "data")
             
             # bind together dataframes assuming they have identical column names 
-            output <- rbind(output, df)
-        })
+            output <- rbind(output, d)
+          }
+        }
         
         # order by draw and modelcheck_group
         output <- output[order(output$modelcheck_group, output$draw),]
@@ -533,8 +535,11 @@ add_model <- function(df, models, outcome_name, residuals = TRUE) {
         # Check input df to see which model predictions and residuals are already there
         cur_models <- unique(df$modelcheck_group)
         # filter out residual names from list of models already in input dataframe
-        res_idx <- which(grepl("^res\\|.", cur_models))
-        cur_models = cur_models[-res_idx]
+        is_res <- grepl("^res\\|.", cur_models)
+        if (any(is_res)) {
+          res_idx <- which(is_res)
+          cur_models = cur_models[-res_idx]
+        }
     } else {
         data <- df
         # Create empty set of models.
