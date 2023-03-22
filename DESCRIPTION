@@ -4,7 +4,7 @@ Title: Exploratory model checks in EDA
 Version: 0.1.1
 Description: This package has R scripts for fitting regression models and outputting predictive checks.
 Author: Alex Kale
-Maintainer: Alex Kale <kalea@uw.edu>
+Maintainer: Alex Kale <kalea@uchicago.edu>
 License: Apache2
 LazyData: true
 Imports: 
@@ -12,7 +12,6 @@ Imports:
     tidyr,
     purrr,
     magrittr,
-    stringr,
     gamlss,
     gamlss.dist,
     brms,
